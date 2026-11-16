@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>東武バス 川越02 時刻表</title>
+    <style>
+      button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) { min-height: 2.25rem; }
+
+      :root {
+        --bg: #eef1f4;
+        --surface: #ffffff;
+        --surface-2: #f4f6f8;
+        --ink: #17222e;
+        --ink-2: #4c5a68;
+        --ink-3: #8494a3;
+        --line: #d9e0e7;
+        --navy: #123a5f;
+        --navy-ink: #ffffff;
+        --accent: #e86a17;
+        --accent-soft: #fdf0e4;
+        --next-bg: #123a5f;
+        --next-ink: #ffffff;
+        --chip-bg: #eef2f6;
+        --tag-bg: #e86a17;
+        --tag-ink: #ffffff;
+        --night-bg: #33475e;
+        --night-ink: #ffffff;
+        --shadow: 0 1px 3px rgba(18, 42, 66, .10), 0 4px 14px rgba(18, 42, 66, .06);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0d141b;
+          --surface: #16212c;
+          --surface-2: #1b2836;
+          --ink: #e8eef4;
+          --ink-2: #a9b8c6;
+          --ink-3: #71848f;
+          --line: #2a3948;
+          --navy: #1d4e79;
+          --accent: #f07f2e;
+          --accent-soft: #3a2a1a;
+          --next-bg: #1d4e79;
+          --chip-bg: #22303f;
+          --night-bg: #49637e;
+          --shadow: 0 1px 3px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+        }
+      }
+
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", "Noto Sans JP", sans-serif;
+        line-height: 1.5;
+      }
+      .wrap { max-width: 640px; margin: 0 auto; padding: 0 14px 40px; }
+
+      /* ---------- Header ---------- */
+      header {
+        background: var(--navy);
+        color: var(--navy-ink);
+        margin: 0 -14px;
+        padding: 18px 14px 16px;
+      }
+      .head-inner { max-width: 640px; margin: 0 auto; }
+      .route-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .route-badge {
+        background: var(--accent);
+        color: #fff;
+        font-weight: 800;
+        font-size: 15px;
+        letter-spacing: .04em;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-variant-numeric: tabular-nums;
+      }
+      .head-title { font-size: 19px; font-weight: 700; letter-spacing: .02em; }
+      .head-sub { margin-top: 6px; font-size: 13px; opacity: .85; }
+      .clock { margin-top: 2px; font-size: 12.5px; opacity: .7; font-variant-numeric: tabular-nums; }
+
+      /* ---------- Tabs ---------- */
+      .tabs-block { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 12px 0 8px; }
+      .seg {
+        display: flex; gap: 4px;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 4px;
+      }
+      .seg + .seg { margin-top: 8px; }
+      .seg button {
+        flex: 1 1 0;
+        appearance: none; border: 0; background: transparent;
+        color: var(--ink-2);
+        font: inherit; font-size: 14px; font-weight: 600;
+        padding: 8px 6px;
+        border-radius: 7px;
+        cursor: pointer;
+        min-height: 44px;
+        line-height: 1.3;
+      }
+      .seg button .seg-sub { display: block; font-size: 11px; font-weight: 500; color: var(--ink-3); margin-top: 1px; }
+      .seg button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+      .seg button[aria-selected="true"] .seg-sub { color: var(--ink-2); }
+      .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .today-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-left: 5px; vertical-align: 2px; }
+      .today-dot[hidden] { display: none; }
+
+      /* ---------- Next bus banner ---------- */
+      .next-banner {
+        background: var(--next-bg); color: var(--next-ink);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin: 6px 0 12px;
+        display: none;
+      }
+      .next-banner.show { display: block; }
+      .next-label { font-size: 12px; font-weight: 700; letter-spacing: .08em; opacity: .8; }
+      .next-main { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: 2px; }
+      .next-time { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+      .next-away { font-size: 16px; font-weight: 700; }
+      .next-dest { font-size: 13px; opacity: .85; }
+      .next-after { margin-top: 6px; font-size: 12.5px; opacity: .75; font-variant-numeric: tabular-nums; }
+
+      /* ---------- Summary strip ---------- */
+      .summary {
+        display: flex; gap: 8px; flex-wrap: wrap;
+        margin: 4px 0 12px;
+      }
+      .summary .stat {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 8px 12px;
+        flex: 1 1 auto;
+        min-width: 96px;
+      }
+      .stat .k { font-size: 11px; color: var(--ink-3); font-weight: 600; letter-spacing: .05em; }
+      .stat .v { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+      .stat .v small { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+
+      /* ---------- Timetable ---------- */
+      .table-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+      .trow { display: flex; align-items: stretch; border-bottom: 1px solid var(--line); }
+      .trow:last-child { border-bottom: 0; }
+      .trow.now-hour { background: var(--accent-soft); }
+      .hour {
+        flex: 0 0 52px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums;
+        background: var(--surface-2);
+        border-right: 1px solid var(--line);
+        padding: 10px 0;
+      }
+      .hour small { font-size: 11px; font-weight: 600; color: var(--ink-3); margin-left: 1px; }
+      .mins { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; align-content: center; }
+      .min {
+        position: relative;
+        font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums;
+        background: var(--chip-bg);
+        border-radius: 7px;
+        padding: 4px 9px;
+        min-width: 46px; text-align: center;
+        line-height: 1.35;
+      }
+      .min .tag {
+        display: inline-block;
+        font-size: 10px; font-weight: 800;
+        border-radius: 4px;
+        padding: 0 4px;
+        margin-left: 4px;
+        vertical-align: 3px;
+        line-height: 1.6;
+      }
+      .tag.matsu { background: var(--tag-bg); color: var(--tag-ink); }
+      .tag.night { background: var(--night-bg); color: var(--night-ink); }
+      .min.past { opacity: .32; }
+      .min.next {
+        background: var(--accent); color: #fff; font-weight: 800;
+        box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+      }
+      .min.next .tag.matsu { background: #fff; color: var(--accent); }
+      .min.next .tag.night { background: #fff; color: var(--night-bg); }
+
+      /* ---------- Legend / footer ---------- */
+      .legend {
+        margin-top: 14px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 13px; color: var(--ink-2);
+      }
+      .legend h2 { font-size: 13px; margin: 0 0 8px; color: var(--ink); }
+      .legend ul { margin: 0; padding: 0; list-style: none; }
+      .legend li { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+      .legend .tag { display: inline-block; font-size: 10px; font-weight: 800; border-radius: 4px; padding: 0 5px; line-height: 1.7; flex: 0 0 auto; }
+      .legend .tag.matsu { background: var(--tag-bg); color: var(--tag-ink); }
+      .legend .tag.night { background: var(--night-bg); color: var(--night-ink); }
+      .legend .tag.none { background: var(--chip-bg); color: var(--ink-2); border: 1px solid var(--line); }
+      footer { margin-top: 16px; font-size: 12.5px; color: var(--ink-2); line-height: 1.7; }
+      footer p { margin: 0 0 8px; }
+      .home-hint {
+        margin-top: 14px;
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 12.5px; color: var(--ink-2);
+        background: var(--surface);
+      }
+      .home-hint strong { color: var(--ink); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="head-inner">
+          <div class="route-line">
+            <span class="route-badge">川越02</span>
+            <span class="head-title">東武バス 時刻表</span>
+          </div>
+          <div class="head-sub" id="headSub">川島郵便局前 → 川越駅</div>
+          <div class="clock" id="clock"></div>
+        </div>
+      </header>
+
+      <div class="tabs-block">
+        <div class="seg" role="tablist" aria-label="路線">
+          <button type="button" role="tab" id="tabRouteA" aria-selected="true">
+            川島郵便局前 発<span class="seg-sub">川越駅行き</span>
+          </button>
+          <button type="button" role="tab" id="tabRouteB" aria-selected="false">
+            川越駅 発<span class="seg-sub">八幡団地・東松山駅行き（2番のりば）</span>
+          </button>
+        </div>
+        <div class="seg" role="tablist" aria-label="ダイヤ">
+          <button type="button" role="tab" id="tabWeekday" aria-selected="true">平日<span class="today-dot" id="dotWeekday" hidden></span></button>
+          <button type="button" role="tab" id="tabWeekend" aria-selected="false">土曜・日祝<span class="today-dot" id="dotWeekend" hidden></span></button>
+        </div>
+      </div>
+
+      <div class="next-banner" id="nextBanner" aria-live="polite">
+        <div class="next-label">次のバス</div>
+        <div class="next-main">
+          <span class="next-time" id="nextTime">--:--</span>
+          <span class="next-away" id="nextAway"></span>
+          <span class="next-dest" id="nextDest"></span>
+        </div>
+        <div class="next-after" id="nextAfter"></div>
+      </div>
+
+      <div class="summary" id="summary"></div>
+
+      <div class="table-card" id="tableCard"></div>
+
+      <div class="legend" id="legendB" hidden>
+        <h2>凡例（川越駅発）</h2>
+        <ul>
+          <li><span class="tag none">無印</span> 八幡団地行き</li>
+          <li><span class="tag matsu">松</span> 東松山駅行き（八幡団地経由）</li>
+          <li><span class="tag night">深夜</span> 深夜バス（運賃が異なります）</li>
+        </ul>
+      </div>
+
+      <div class="home-hint">
+        <strong>iPhoneのホーム画面に追加するには：</strong>
+        このページをブラウザで開いて、共有ボタン（□に↑のマーク）→「ホーム画面に追加」をタップすると、ホームから直接開けるようになります。
+      </div>
+
+      <footer>
+        <p>土曜と日祝は同じダイヤです。出典: 東武バス公式時刻表（2026年11月16日現在）・駅探で照合。ダイヤ改正や遅延で変わることがあります。</p>
+      </footer>
+    </div>
+
+    <script>
+      // ===== 時刻表データ（東武バス公式時刻表 2026年11月16日現在・駅探で照合済み）=====
+      // A: 川島郵便局前発 → 川越駅行き（全便 川越駅行き）
+      // B: 川越駅発（2番のりば）→ 八幡団地行き / 東松山駅行き（tag: "matsu"=東松山駅行き, "night"=深夜バス）
+      var DATA = {
+        A: {
+          from: "川島郵便局前",
+          to: "川越駅",
+          headSub: "川島郵便局前 → 川越駅",
+          destLabel: "川越駅行き",
+          weekday: {
+            5: [48],
+            6: [8, 23, 48],
+            7: [3, 23, 38, 58],
+            8: [25, 55],
+            9: [13, 38],
+            10: [8, 32],
+            11: [13, 53],
+            12: [30, 53],
+            13: [18, 43],
+            14: [8, 33],
+            15: [23, 53],
+            16: [13, 41],
+            17: [28, 38],
+            18: [19, 41],
+            19: [3, 43],
+            20: [33],
+            21: [8]
+          },
+          weekend: {
+            6: [3, 33, 58],
+            7: [13, 24, 48],
+            8: [7, 23, 58],
+            9: [51],
+            10: [30],
+            11: [18, 33],
+            12: [13, 33],
+            13: [23],
+            14: [12, 21, 43],
+            15: [13, 28],
+            16: [8, 28],
+            17: [3, 33],
+            18: [3, 23],
+            19: [9, 58],
+            20: [23],
+            21: [6]
+          }
+        },
+        B: {
+          from: "川越駅（2番のりば）",
+          to: "八幡団地・東松山駅",
+          headSub: "川越駅（2番のりば） → 八幡団地・東松山駅",
+          destLabel: "",
+          weekday: {
+            6: [{ m: 25, t: "matsu" }, { m: 50 }],
+            7: [{ m: 2 }, { m: 20, t: "matsu" }, { m: 41 }],
+            8: [{ m: 0 }, { m: 15 }, { m: 30 }, { m: 50 }],
+            9: [{ m: 17 }, { m: 42, t: "matsu" }],
+            10: [{ m: 10 }, { m: 55 }],
+            11: [{ m: 19 }, { m: 43 }],
+            12: [{ m: 15 }, { m: 43 }],
+            13: [{ m: 0, t: "matsu" }, { m: 40 }],
+            14: [{ m: 10 }, { m: 30 }, { m: 55 }],
+            15: [{ m: 15 }, { m: 41, t: "matsu" }],
+            16: [{ m: 15 }, { m: 40 }],
+            17: [{ m: 5, t: "matsu" }, { m: 25 }, { m: 45 }],
+            18: [{ m: 8 }, { m: 30 }, { m: 50 }],
+            19: [{ m: 15 }, { m: 31, t: "matsu" }, { m: 47 }],
+            20: [{ m: 12 }, { m: 35 }],
+            21: [{ m: 15 }, { m: 50 }],
+            22: [{ m: 35 }],
+            23: [{ m: 1 }, { m: 40, t: "night" }]
+          },
+          weekend: {
+            6: [{ m: 40, t: "matsu" }],
+            7: [{ m: 0 }, { m: 35 }, { m: 55 }],
+            8: [{ m: 25, t: "matsu" }],
+            9: [{ m: 5 }, { m: 43 }],
+            10: [{ m: 25 }, { m: 55 }],
+            11: [{ m: 20 }],
+            12: [{ m: 5 }, { m: 55, t: "matsu" }],
+            13: [{ m: 15 }, { m: 50 }],
+            14: [{ m: 15 }, { m: 35 }],
+            15: [{ m: 5 }, { m: 30 }],
+            16: [{ m: 5 }, { m: 30 }],
+            17: [{ m: 5 }, { m: 25 }, { m: 45, t: "matsu" }],
+            18: [{ m: 23 }, { m: 55 }],
+            19: [{ m: 20 }, { m: 55 }],
+            20: [{ m: 20 }, { m: 45 }],
+            21: [{ m: 20 }, { m: 50 }],
+            22: [{ m: 10 }, { m: 30 }]
+          }
+        }
+      };
+
+      // 日本の祝日（2026年・2027年）— 今日のダイヤ判定用
+      var HOLIDAYS = {};
+      [
+        "2026-01-01","2026-01-12","2026-02-11","2026-02-23","2026-03-20","2026-04-29",
+        "2026-05-03","2026-05-04","2026-05-05","2026-05-06","2026-07-20","2026-08-11",
+        "2026-09-21","2026-09-22","2026-09-23","2026-10-12","2026-11-03","2026-11-23",
+        "2027-01-01","2027-01-11","2027-02-11","2027-02-23","2027-03-20","2027-04-29",
+        "2027-05-03","2027-05-04","2027-05-05","2027-07-19","2027-08-11","2027-09-20",
+        "2027-09-23","2027-10-11","2027-11-03","2027-11-23"
+      ].forEach(function (d) { HOLIDAYS[d] = true; });
+
+      function pad(n) { return (n < 10 ? "0" : "") + n; }
+      function dateKey(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+
+      function todayType(now) {
+        var dow = now.getDay();
+        if (dow === 0 || dow === 6) return "weekend";
+        if (HOLIDAYS[dateKey(now)]) return "weekend";
+        return "weekday";
+      }
+
+      // ダイヤを [{h, m, tag, dest}] の時系列リストに変換
+      function flatten(route, type) {
+        var table = DATA[route][type];
+        var list = [];
+        Object.keys(table).map(Number).sort(function (a, b) { return a - b; }).forEach(function (h) {
+          table[h].forEach(function (e) {
+            if (typeof e === "number") {
+              list.push({ h: h, m: e, tag: null, dest: DATA[route].destLabel });
+            } else {
+              list.push({
+                h: h, m: e.m, tag: e.t || null,
+                dest: e.t === "matsu" ? "東松山駅行き" : "八幡団地行き"
+              });
+            }
+          });
+        });
+        return list;
+      }
+
+      var state = { route: "A", type: null };
+      var firstRender = true;
+
+      function $(id) { return document.getElementById(id); }
+
+      function render() {
+        var now = new Date();
+        var tType = todayType(now);
+        var isToday = state.type === tType;
+        var route = DATA[state.route];
+        var table = route[state.type];
+        var list = flatten(state.route, state.type);
+        var nowMin = now.getHours() * 60 + now.getMinutes();
+
+        // 次のバス
+        var nextIdx = -1;
+        if (isToday) {
+          for (var i = 0; i < list.length; i++) {
+            if (list[i].h * 60 + list[i].m > nowMin) { nextIdx = i; break; }
+          }
+        }
+
+        // ヘッダー
+        $("headSub").textContent = route.headSub;
+        var dowNames = ["日", "月", "火", "水", "木", "金", "土"];
+        $("clock").textContent =
+          now.getFullYear() + "年" + (now.getMonth() + 1) + "月" + now.getDate() + "日（" + dowNames[now.getDay()] + "） " +
+          pad(now.getHours()) + ":" + pad(now.getMinutes()) +
+          " 現在 ・ 今日は" + (tType === "weekday" ? "平日" : "土曜・日祝") + "ダイヤ";
+
+        // タブ状態
+        $("tabRouteA").setAttribute("aria-selected", state.route === "A" ? "true" : "false");
+        $("tabRouteB").setAttribute("aria-selected", state.route === "B" ? "true" : "false");
+        $("tabWeekday").setAttribute("aria-selected", state.type === "weekday" ? "true" : "false");
+        $("tabWeekend").setAttribute("aria-selected", state.type === "weekend" ? "true" : "false");
+        $("dotWeekday").hidden = tType !== "weekday";
+        $("dotWeekend").hidden = tType !== "weekend";
+
+        // 次のバスバナー
+        var banner = $("nextBanner");
+        if (isToday && nextIdx >= 0) {
+          var nb = list[nextIdx];
+          var away = nb.h * 60 + nb.m - nowMin;
+          banner.classList.add("show");
+          $("nextTime").textContent = pad(nb.h) + ":" + pad(nb.m);
+          $("nextAway").textContent = away <= 1 ? "まもなく" : "あと約" + away + "分";
+          $("nextDest").textContent = nb.dest + (nb.tag === "night" ? "（深夜バス）" : "");
+          var after = list.slice(nextIdx + 1, nextIdx + 3).map(function (b) {
+            return pad(b.h) + ":" + pad(b.m) + (b.tag === "matsu" ? "（松）" : "");
+          });
+          $("nextAfter").textContent = after.length ? "その次： " + after.join(" ・ ") : "このバスが最終です";
+        } else if (isToday) {
+          banner.classList.add("show");
+          $("nextTime").textContent = "運行終了";
+          $("nextAway").textContent = "";
+          $("nextDest").textContent = "本日のバスは終了しました";
+          $("nextAfter").textContent = "";
+        } else {
+          banner.classList.remove("show");
+        }
+
+        // 始発・終発・本数
+        var first = list[0], last = list[list.length - 1];
+        $("summary").innerHTML =
+          '<div class="stat"><div class="k">始発</div><div class="v">' + pad(first.h) + ":" + pad(first.m) + "</div></div>" +
+          '<div class="stat"><div class="k">終発</div><div class="v">' + pad(last.h) + ":" + pad(last.m) +
+          (last.tag === "night" ? ' <small>深夜バス</small>' : "") + "</div></div>" +
+          '<div class="stat"><div class="k">本数</div><div class="v">' + list.length + '<small> 本</small></div></div>';
+
+        // 時刻表本体
+        var html = "";
+        var flatIdx = 0;
+        Object.keys(table).map(Number).sort(function (a, b) { return a - b; }).forEach(function (h) {
+          var isNowHour = isToday && now.getHours() === h;
+          html += '<div class="trow' + (isNowHour ? " now-hour" : "") + '">';
+          html += '<div class="hour">' + h + "<small>時</small></div>";
+          html += '<div class="mins">';
+          table[h].forEach(function (e) {
+            var m = typeof e === "number" ? e : e.m;
+            var tag = typeof e === "number" ? null : (e.t || null);
+            var cls = "min";
+            if (isToday) {
+              if (flatIdx === nextIdx) cls += " next";
+              else if (h * 60 + m <= nowMin) cls += " past";
+            }
+            var tagHtml = "";
+            if (tag === "matsu") tagHtml = '<span class="tag matsu">松</span>';
+            if (tag === "night") tagHtml = '<span class="tag night">深夜</span>';
+            html += '<span class="' + cls + '" data-idx="' + flatIdx + '">' + pad(m) + tagHtml + "</span>";
+            flatIdx++;
+          });
+          html += "</div></div>";
+        });
+        $("tableCard").innerHTML = html;
+
+        // 凡例はBのみ
+        $("legendB").hidden = state.route !== "B";
+
+        // 初回だけ次のバスへスクロール
+        if (firstRender && isToday && nextIdx >= 0) {
+          var el = document.querySelector(".min.next");
+          if (el) {
+            setTimeout(function () {
+              el.scrollIntoView({ block: "center", behavior: "smooth" });
+            }, 350);
+          }
+        }
+        firstRender = false;
+      }
+
+      $("tabRouteA").addEventListener("click", function () { state.route = "A"; render(); });
+      $("tabRouteB").addEventListener("click", function () { state.route = "B"; render(); });
+      $("tabWeekday").addEventListener("click", function () { state.type = "weekday"; render(); });
+      $("tabWeekend").addEventListener("click", function () { state.type = "weekend"; render(); });
+
+      state.type = todayType(new Date());
+      render();
+      setInterval(render, 30000);
+    </script>
+  </body>
+</html>
