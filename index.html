@@ -244,6 +244,15 @@
       .delay-banner .db-title { font-weight: 800; margin-bottom: 2px; }
       .delay-banner .db-meta { font-size: 12px; opacity: .85; margin-top: 4px; }
       .delay-banner a { color: #7a1f1c; font-weight: 700; }
+      /* --- v3.2 additions: 種別フィルター --- */
+      .type-filter { display: none; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; align-items: center; }
+      .type-filter.show { display: flex; }
+      .type-filter .tf-label { font-size: 12px; font-weight: 700; color: var(--ink-2); margin-right: 2px; }
+      .tf-chip { border: 1.5px solid var(--line); background: var(--chip-bg); color: var(--ink-2); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+      .tf-chip[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: #fff; }
+      .tf-chip.all { border-style: dashed; }
+      .tf-chip.all[aria-pressed="true"] { border-style: solid; }
+      .empty-note { padding: 16px; font-size: 14px; color: var(--ink-2); }
     </style>
   </head>
   <body>
@@ -286,6 +295,8 @@
         <a href="https://www.tobu.co.jp/service_status/" target="_blank" rel="noopener">東上線の運行情報（東武公式）を確認する</a>
       </div>
 
+      <div class="type-filter" id="typeFilter" role="group" aria-label="種別で絞り込み"></div>
+
       <div class="next-banner" id="nextBanner" aria-live="polite">
         <div class="next-label" id="nextLabel">次のバス</div>
         <div class="next-main">
@@ -320,6 +331,35 @@
 
       var TFULL = { "普": "普通", "準": "準急", "急": "急行", "快": "快速急行", "TJ": "TJライナー", "特": "川越特急", "F": "Fライナー" };
 
+      // 種別フィルター（東上線のみ。上下線で別々に保持し、ブラウザに保存する）
+      var TYPE_ORDER = [["普", "普通"], ["準", "準急"], ["急", "急行"], ["快", "快速急行"], ["TJ", "TJライナー"], ["特", "川越特急"]];
+      function typeKey(ty) { return ty === "F" ? "快" : ty; }
+      function defaultSel() { var s = {}; TYPE_ORDER.forEach(function (t) { s[t[0]] = true; }); return s; }
+      var typeSel = { C: defaultSel(), D: defaultSel() };
+      try {
+        var savedSel = JSON.parse(localStorage.getItem("tojoTypeFilters") || "null");
+        if (savedSel) {
+          ["C", "D"].forEach(function (r) {
+            if (savedSel[r]) TYPE_ORDER.forEach(function (t) {
+              if (typeof savedSel[r][t[0]] === "boolean") typeSel[r][t[0]] = savedSel[r][t[0]];
+            });
+          });
+        }
+      } catch (e) {}
+      function saveTypeSel() { try { localStorage.setItem("tojoTypeFilters", JSON.stringify(typeSel)); } catch (e) {} }
+      function applyFilter(route, type) {
+        var table = DATA[route][type];
+        if (!DATA[route].train) return table;
+        var sel = typeSel[route];
+        if (TYPE_ORDER.every(function (t) { return sel[t[0]]; })) return table;
+        var out = {};
+        Object.keys(table).forEach(function (h) {
+          var rows = table[h].filter(function (e) { return sel[typeKey(e.ty)]; });
+          if (rows.length) out[h] = rows;
+        });
+        return out;
+      }
+
       // 日本の祝日（2026年・2027年）— 今日のダイヤ判定用
       var HOLIDAYS = {};
       [
@@ -344,8 +384,7 @@
       }
 
       // ダイヤを時系列リストに変換: {h, m, tag, tagCls, tagTxt, dest, short, dst}
-      function flatten(route, type) {
-        var table = DATA[route][type];
+      function flatten(route, table) {
         var list = [];
         Object.keys(table).map(Number).sort(function (a, b) { return sk(a) - sk(b); }).forEach(function (h) {
           table[h].forEach(function (e) {
@@ -385,6 +424,7 @@
         D: '<h2>凡例（東上線・川越発）</h2><ul>' +
            '<li><span class="tag ty loc">普</span> 普通 ／ <span class="tag ty">準</span> 準急 ／ <span class="tag ty">急</span> 急行 ／ <span class="tag ty">快</span> 快速急行 ／ <span class="tag ty ex">TJ</span> TJライナー ／ <span class="tag ty ex">特</span> 川越特急 ／ <span class="tag ty">F</span> Fライナー（副都心線直通の快速急行）</li>' +
            '<li>行き先は池袋のほか、新木場・元町・中華街・湘南台・海老名・武蔵小杉など直通先を含みます。</li>' +
+           '<li>Fライナーは「快速急行」として絞り込まれます。</li>' +
            '<li>TJライナー・川越特急は別途料金が必要です。</li></ul>'
       };
 
@@ -398,8 +438,8 @@
         var tType = todayType(now);
         var isToday = state.type === tType;
         var route = DATA[state.route];
-        var table = route[state.type];
-        var list = flatten(state.route, state.type);
+        var table = applyFilter(state.route, state.type);
+        var list = flatten(state.route, table);
         var nowMin = now.getHours() * 60 + now.getMinutes();
         if (now.getHours() < 4) nowMin += 1440;
         var veh = route.train ? "電車" : "バス";
@@ -444,7 +484,7 @@
             return pad(b.h) + ":" + pad(b.m) + b.short;
           });
           $("nextAfter").textContent = after.length ? "その次： " + after.join(" ・ ") : "この" + veh + "が最終です";
-        } else if (isToday) {
+        } else if (isToday && list.length) {
           banner.classList.add("show");
           $("nextTime").textContent = "運行終了";
           $("nextAway").textContent = "";
@@ -455,12 +495,17 @@
         }
 
         // 始発・終発・本数
-        var first = list[0], last = list[list.length - 1];
-        $("summary").innerHTML =
-          '<div class="stat"><div class="k">始発</div><div class="v">' + pad(first.h) + ":" + pad(first.m) + "</div></div>" +
-          '<div class="stat"><div class="k">終発</div><div class="v">' + pad(last.h) + ":" + pad(last.m) +
-          (last.tag === "night" ? ' <small>深夜バス</small>' : "") + "</div></div>" +
-          '<div class="stat"><div class="k">本数</div><div class="v">' + list.length + '<small> 本</small></div></div>';
+        if (list.length) {
+          var first = list[0], last = list[list.length - 1];
+          $("summary").innerHTML =
+            '<div class="stat"><div class="k">始発</div><div class="v">' + pad(first.h) + ":" + pad(first.m) + "</div></div>" +
+            '<div class="stat"><div class="k">終発</div><div class="v">' + pad(last.h) + ":" + pad(last.m) +
+            (last.tag === "night" ? ' <small>深夜バス</small>' : "") + "</div></div>" +
+            '<div class="stat"><div class="k">本数</div><div class="v">' + list.length + '<small> 本</small></div></div>';
+        } else {
+          $("summary").innerHTML =
+            '<div class="stat"><div class="k">本数</div><div class="v">0<small> 本</small></div></div>';
+        }
 
         // 時刻表本体
         var html = "";
@@ -485,6 +530,7 @@
           });
           html += "</div></div>";
         });
+        if (!list.length) html = '<div class="empty-note">選択された種別の電車はありません。上のチップで種別を選んでください。</div>';
         $("tableCard").innerHTML = html;
 
         // 凡例
@@ -494,6 +540,44 @@
 
         // 運行情報リンクは電車タブのときだけ表示
         $("svcLink").hidden = !route.train;
+
+        // 種別フィルターチップ（電車タブのみ・上下線で別々の選択）
+        var tf = $("typeFilter");
+        if (route.train) {
+          var sel = typeSel[state.route];
+          var allOn = TYPE_ORDER.every(function (t) { return sel[t[0]]; });
+          var chips = '<span class="tf-label">種別</span>';
+          chips += '<button type="button" class="tf-chip all" data-all="1" aria-pressed="' + (allOn ? "true" : "false") + '">すべて</button>';
+          TYPE_ORDER.forEach(function (t) {
+            chips += '<button type="button" class="tf-chip" data-ty="' + t[0] + '" aria-pressed="' + (sel[t[0]] ? "true" : "false") + '">' + t[1] + "</button>";
+          });
+          tf.innerHTML = chips;
+          tf.classList.add("show");
+          tf.querySelectorAll(".tf-chip").forEach(function (chip) {
+            chip.addEventListener("click", function () {
+              var cur = typeSel[state.route];
+              if (chip.getAttribute("data-all")) {
+                typeSel[state.route] = defaultSel();
+              } else {
+                var k = chip.getAttribute("data-ty");
+                var wasAll = TYPE_ORDER.every(function (t) { return cur[t[0]]; });
+                if (wasAll) {
+                  // 全部ONの状態で1つ押したら、その種別だけを表示
+                  TYPE_ORDER.forEach(function (t) { cur[t[0]] = t[0] === k; });
+                } else {
+                  cur[k] = !cur[k];
+                  // 全部OFFになったら全部ONに戻す
+                  if (TYPE_ORDER.every(function (t) { return !cur[t[0]]; })) typeSel[state.route] = defaultSel();
+                }
+              }
+              saveTypeSel();
+              render();
+            });
+          });
+        } else {
+          tf.classList.remove("show");
+          tf.innerHTML = "";
+        }
 
         // 初回だけ次の便へスクロール
         if (firstRender && isToday && nextIdx >= 0) {
