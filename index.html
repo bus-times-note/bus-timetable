@@ -391,7 +391,7 @@
             if (typeof e === "number") {
               list.push({ h: h, m: e, tag: null, tagCls: "", tagTxt: "", dest: DATA[route].destLabel, short: "", dst: "" });
             } else if (e.ty) {
-              var cls = "ty" + (e.ty === "TJ" || e.ty === "特" ? " ex" : (e.ty === "普" ? " loc" : ""));
+              var cls = "ty" + (e.ty === "TJ" ? " ex" : (e.ty === "普" ? " loc" : ""));
               list.push({
                 h: h, m: e.m, tag: "ty", tagCls: cls, tagTxt: e.ty,
                 dest: TFULL[e.ty] + " " + e.d + "行き",
@@ -418,11 +418,11 @@
            '<li><span class="tag matsu">松</span> 東松山駅行き（八幡団地経由）</li>' +
            '<li><span class="tag night">深夜</span> 深夜バス（運賃が異なります）</li></ul>',
         C: '<h2>凡例（東上線・池袋発）</h2><ul>' +
-           '<li><span class="tag ty loc">普</span> 普通 ／ <span class="tag ty">準</span> 準急 ／ <span class="tag ty">急</span> 急行 ／ <span class="tag ty">快</span> 快速急行 ／ <span class="tag ty ex">TJ</span> TJライナー ／ <span class="tag ty ex">特</span> 川越特急</li>' +
+           '<li><span class="tag ty loc">普</span> 普通 ／ <span class="tag ty">準</span> 準急 ／ <span class="tag ty">急</span> 急行 ／ <span class="tag ty">快</span> 快速急行 ／ <span class="tag ty ex">TJ</span> TJライナー ／ <span class="tag ty">特</span> 川越特急</li>' +
            '<li>各電車に行き先を併記しています。成増・志木・上福岡行きは川越まで行きません（川越に停まるのは川越市・森林公園・小川町行き）。</li>' +
-           '<li>TJライナーは別途座席指定料金が必要です。</li></ul>',
+           '<li>TJライナーは別途座席指定料金が必要です（川越特急は通常運賃のみで乗れます）。</li></ul>',
         D: '<h2>凡例（東上線・川越発）</h2><ul>' +
-           '<li><span class="tag ty loc">普</span> 普通 ／ <span class="tag ty">準</span> 準急 ／ <span class="tag ty">急</span> 急行 ／ <span class="tag ty">快</span> 快速急行 ／ <span class="tag ty ex">TJ</span> TJライナー ／ <span class="tag ty ex">特</span> 川越特急 ／ <span class="tag ty">F</span> Fライナー（副都心線直通の快速急行）</li>' +
+           '<li><span class="tag ty loc">普</span> 普通 ／ <span class="tag ty">準</span> 準急 ／ <span class="tag ty">急</span> 急行 ／ <span class="tag ty">快</span> 快速急行 ／ <span class="tag ty ex">TJ</span> TJライナー ／ <span class="tag ty">特</span> 川越特急 ／ <span class="tag ty">F</span> Fライナー（副都心線直通の快速急行）</li>' +
            '<li>行き先は池袋のほか、新木場・元町・中華街・湘南台・海老名・武蔵小杉など直通先を含みます。</li>' +
            '<li>Fライナーは「快速急行」として絞り込まれます。</li>' +
            '<li>TJライナーは別途座席指定料金が必要です（川越特急は通常運賃のみで乗れます）。</li></ul>'
