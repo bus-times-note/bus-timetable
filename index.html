@@ -236,6 +236,14 @@
       .legend .tag.ty { background: var(--navy); color: #fff; }
       .legend .tag.ty.ex { background: var(--accent); color: #fff; }
       .legend .tag.ty.loc { background: var(--chip-bg); color: var(--ink-2); border: 1px solid var(--line); }
+      /* --- v3.1 additions: 運行情報リンク・遅延バナー --- */
+      .svc-link { margin: 0 0 12px; }
+      .svc-link a { display: block; text-align: center; padding: 10px 12px; border: 1.5px solid var(--navy); border-radius: 12px; color: var(--navy); background: var(--chip-bg); font-weight: 700; font-size: 14px; text-decoration: none; }
+      .delay-banner { display: none; margin: 0 0 12px; padding: 12px 14px; border-radius: 12px; background: #fdecea; border: 1.5px solid #d64541; color: #7a1f1c; font-size: 14px; line-height: 1.55; }
+      .delay-banner.show { display: block; }
+      .delay-banner .db-title { font-weight: 800; margin-bottom: 2px; }
+      .delay-banner .db-meta { font-size: 12px; opacity: .85; margin-top: 4px; }
+      .delay-banner a { color: #7a1f1c; font-weight: 700; }
     </style>
   </head>
   <body>
@@ -270,6 +278,12 @@
           <button type="button" role="tab" id="tabWeekday" aria-selected="true">平日<span class="today-dot" id="dotWeekday" hidden></span></button>
           <button type="button" role="tab" id="tabWeekend" aria-selected="false">土曜・日祝<span class="today-dot" id="dotWeekend" hidden></span></button>
         </div>
+      </div>
+
+      <div class="delay-banner" id="delayBanner" role="alert"></div>
+
+      <div class="svc-link" id="svcLink" hidden>
+        <a href="https://www.tobu.co.jp/service_status/" target="_blank" rel="noopener">東上線の運行情報（東武公式）を確認する</a>
       </div>
 
       <div class="next-banner" id="nextBanner" aria-live="polite">
@@ -478,6 +492,9 @@
         lg.innerHTML = LEGENDS[state.route];
         lg.hidden = !LEGENDS[state.route];
 
+        // 運行情報リンクは電車タブのときだけ表示
+        $("svcLink").hidden = !route.train;
+
         // 初回だけ次の便へスクロール
         if (firstRender && isToday && nextIdx >= 0) {
           var el = document.querySelector(".min.next");
@@ -495,6 +512,28 @@
       });
       $("tabWeekday").addEventListener("click", function () { state.type = "weekday"; render(); });
       $("tabWeekend").addEventListener("click", function () { state.type = "weekend"; render(); });
+
+      // 遅延バナー: status.json（自動チェックが更新する）を読み、乱れがある時だけ表示
+      function checkDelay() {
+        fetch("status.json?t=" + Date.now(), { cache: "no-store" })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (s) {
+            var b = $("delayBanner");
+            if (s && s.status === "disruption" && s.text) {
+              var txt = String(s.text).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+              var upd = s.updated ? String(s.updated).replace(/</g, "&lt;") + " 時点 ・ " : "";
+              b.innerHTML = '<div class="db-title">⚠ 東上線 運行情報</div><div>' + txt + "</div>" +
+                '<div class="db-meta">' + upd +
+                '<a href="https://www.tobu.co.jp/service_status/" target="_blank" rel="noopener">公式の運行情報を見る</a></div>';
+              b.classList.add("show");
+            } else {
+              b.classList.remove("show");
+            }
+          })
+          .catch(function () {});
+      }
+      checkDelay();
+      setInterval(checkDelay, 60000);
 
       state.type = todayType(new Date());
       render();
